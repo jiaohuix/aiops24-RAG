@@ -1,4 +1,5 @@
 from typing import Iterable
+import json
 import jsonlines
 
 
@@ -8,6 +9,18 @@ def read_jsonl(path):
         for obj in json_file.iter(type=dict, skip_invalid=True):
             content.append(obj)
     return content
+
+def write_jsonl(data, path):
+    """
+    Writes a list of dictionaries to a JSON Lines file.
+
+    :param data: List of dictionaries to write.
+    :param path: Path to the output JSON Lines file.
+    """
+    with open(path, 'w', encoding='utf-8') as f:
+        for item in data:
+            json_line = json.dumps(item, ensure_ascii=False)
+            f.write(json_line + '\n')
 
 
 def save_answers(
