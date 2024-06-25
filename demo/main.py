@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 import re
 import jieba
 import asyncio
+import time
 
 from dotenv import dotenv_values
 from llama_index.core import Settings
@@ -34,6 +35,7 @@ from llama_index.core import StorageContext
 from qdrant_client.models import Distance, VectorParams
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.postprocessor import SentenceTransformerRerank
 
 from pipeline.ingestion import build_pipeline, build_vector_store, read_data
 from pipeline.qa import read_jsonl, save_answers
@@ -86,7 +88,6 @@ async def main(args):
     Settings.embed_model = embeding
     Settings.llm = llm
 
-    from llama_index.core.postprocessor import SentenceTransformerRerank
     # We choose a model with relatively high speed and decent accuracy.
     reranker = SentenceTransformerRerank(
         model=rerank_path, top_n=topk, device="cuda"
@@ -110,7 +111,6 @@ async def main(args):
     # if collection_info.points_count < 10**9:
         pipeline = build_pipeline(llm, embeding, vector_store=vector_store)
         # 暂时停止实时索引
-        print("update_collection1")
         await client.update_collection(
             collection_name=config["COLLECTION_NAME"] or "aiops24",
             optimizer_config=models.OptimizersConfigDiff(indexing_threshold=0),
@@ -119,23 +119,16 @@ async def main(args):
         nodes = await pipeline.arun(documents=data, show_progress=True, num_workers=1)
 
         # 恢复实时索引
-        print("update_collection2")
         await client.update_collection(
             collection_name=config["COLLECTION_NAME"] or "aiops24",
             optimizer_config=models.OptimizersConfigDiff(indexing_threshold=20000),
         )
-        print("update_collection over")
-        print(len(data))
     else:
-        print("build pipeline else")
         pipeline = build_pipeline(llm, embed_model=None, vector_store=None)
-        # # nodes = pipeline.run(documents=data, show_progress=True, num_workers=1)
-        print("get nodes arun")
-        import time
         s1 = time.time()
         nodes = await pipeline.arun(documents=data, show_progress=False, num_workers=1)
         s2 = time.time()
-        print(f"arun over, took {s2-s1} secs...")
+        print(f"build_pipeline over, took {s2-s1} secs...")
 
 
     # retireve the top 10 most similar nodes using bm25

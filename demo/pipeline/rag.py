@@ -350,7 +350,6 @@ async def generation_with_knowledge_retrieval(
         # node_with_scores = reciprocal_rank_fusion(nodes_list, weights=[1]*len(nodes_list), similarity_top_k=retriever.similarity_top_k)
         node_with_scores = reciprocal_rank_fusion(nodes_list, weights=[3,2,1], similarity_top_k=retriever.similarity_top_k)
         
-        # todo: 再次选取topk
 
         logger.info(f"multi query retrieve nodes: {len(node_with_scores)}")
         # recall_topk = retriever.similarity_top_k
